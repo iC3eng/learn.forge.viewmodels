@@ -37,6 +37,7 @@ namespace forgeSample.Controllers
                 foreach (KeyValuePair<string, dynamic> bucket in new DynamicDictionaryItems(buckets.items))
                 {
                     nodes.Add(new TreeNode(bucket.Value.bucketKey, bucket.Value.bucketKey.Replace(ClientId + "-", string.Empty), "bucket", true));
+                    //System.Diagnostics.Debug.WriteLine("BUCKET_KEY: " + bucket.Value.bucketKey);
                 }
             }
             else
@@ -49,6 +50,8 @@ namespace forgeSample.Controllers
                 {
                     nodes.Add(new TreeNode(Base64Encode((string)objInfo.Value.objectId),
                       objInfo.Value.objectKey, "object", false));
+                    //System.Diagnostics.Debug.WriteLine("OBJECT_ID: " + objInfo.Value.objectKey);
+                    //System.Diagnostics.Debug.WriteLine("OBJECT_KEY: " + objInfo.Value.objectKey);
                 }
             }
             return nodes;
@@ -78,7 +81,7 @@ namespace forgeSample.Controllers
         /// </summary>
         [HttpPost]
         [Route("api/forge/oss/buckets")]
-        public async Task<dynamic> CreateBucket([FromBody]CreateBucketModel bucket)
+        public async Task<dynamic> CreateBucket([FromBody] CreateBucketModel bucket)
         {
             BucketsApi buckets = new BucketsApi();
             dynamic token = await OAuthController.GetInternalAsync();
@@ -102,7 +105,7 @@ namespace forgeSample.Controllers
         /// <returns></returns>
         [HttpPost]
         [Route("api/forge/oss/objects")]
-        public async Task<dynamic> UploadObject([FromForm]UploadFile input)
+        public async Task<dynamic> UploadObject([FromForm] UploadFile input)
         {
             // save the file on the server
             var fileSavePath = Path.Combine(_env.WebRootPath, Path.GetFileName(input.fileToUpload.FileName));
@@ -143,6 +146,47 @@ namespace forgeSample.Controllers
         {
             var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
             return System.Convert.ToBase64String(plainTextBytes);
+        }
+
+
+        /// <summary>
+        /// Start the translation job for a give bucketKey/objectName
+        /// </summary>
+        /// <param name="objModel"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("/api/forge/oss/delete/object")]
+        public async Task<dynamic> DeleteObject([FromBody] DeleteObjectModel objModel)
+        {
+            dynamic oauth = await OAuthController.GetInternalAsync();
+
+            string objectName = Base64Decode(objModel.objectName);
+            objectName = System.IO.Path.GetFileName(objectName);
+            // start the translation
+            ObjectsApi objectsApi = new ObjectsApi();
+            objectsApi.Configuration.AccessToken = oauth.access_token;
+
+            objectsApi.DeleteObject(System.Web.HttpUtility.UrlEncode(objModel.bucketKey), objectName);
+            
+            return null;
+        }
+
+        /// <summary>
+        /// Model for TranslateObject method
+        /// </summary>
+        public class DeleteObjectModel
+        {
+            public string bucketKey { get; set; }
+            public string objectName { get; set; }
+        }
+
+        /// <summary>
+        /// Base64 decodes a string
+        /// </summary>
+        public static string Base64Decode(string plainText)
+        {
+            byte[] base64EncodedBytes = System.Convert.FromBase64String(plainText);
+            return System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
         }
     }
 }

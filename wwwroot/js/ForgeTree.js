@@ -30,6 +30,7 @@ $(document).ready(function () {
     $("#newBucketKey").focus();
   })
 
+  //Start of call when 
   $('#hiddenUploadField').change(function () {
     var node = $('#appBuckets').jstree(true).get_selected(true)[0];
     var _this = this;
@@ -53,6 +54,9 @@ $(document).ready(function () {
           }
         });
         break;
+      //case 'object':
+
+     //  break;
     }
   });
 });
@@ -155,6 +159,14 @@ function autodeskCustomMenu(autodeskNode) {
             translateObject(treeNode);
           },
           icon: 'glyphicon glyphicon-eye-open'
+        },
+        deleteFile: {
+          label: "Delete",
+          action: function () {
+            var treeNode = $('#appBuckets').jstree(true).get_selected(true)[0];
+            deleteObject(treeNode);
+          },
+          icon: 'glyphicon glyphicon-trash'
         }
       };
       break;
@@ -178,6 +190,22 @@ function translateObject(node) {
     data: JSON.stringify({ 'bucketKey': bucketKey, 'objectName': objectKey }),
     success: function (res) {
       $("#forgeViewer").html('Translation started! Please try again in a moment.');
+    },
+  });
+}
+
+function deleteObject(node) {
+  $("#forgeViewer").empty();
+  if (node == null) node = $('#appBuckets').jstree(true).get_selected(true)[0];
+  var bucketKey = node.parents[0];
+  var objectKey = node.id;
+  jQuery.post({
+    url: '/api/forge/oss/delete/object',
+    contentType: 'application/json',
+    data: JSON.stringify({ 'bucketKey': bucketKey, 'objectName': objectKey }),
+    success: function (res) {
+      $("#forgeViewer").html('Item Deleted!');
+      $('#appBuckets').jstree(true).refresh_node(node);
     },
   });
 }
